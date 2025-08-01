@@ -6,8 +6,7 @@ import joblib
 import xgboost as xgb
 from tensorflow import keras
 from sklearn.metrics import roc_curve, auc
-from sklearn.model_selection import train_test_split # <-- IMPORT ADDED
-
+from sklearn.model_selection import train_test_split
 
 st.set_page_config(
     page_title="HB 4lep detection using XGBoost",
@@ -16,17 +15,14 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-
 @st.cache_data
 def load_data():
-    """Loads the pre-processed DataFrames."""
-    mc_df = pd.read_pickle("mc_df.pkl")
-    data_df = pd.read_pickle("data_df.pkl")
+    mc_df = pd.read_parquet("mc_df.parquet")
+    data_df = pd.read_parquet("data_df.parquet")
     return mc_df, data_df
 
 @st.cache_resource
 def load_models():
-    """Loads the pre-trained models and scaler."""
     bst = joblib.load("xgb_model.joblib")
     model_dnn = keras.models.load_model("dnn_model.keras")
     scaler = joblib.load("scaler.joblib")
@@ -39,11 +35,8 @@ except FileNotFoundError:
     st.error("Error: Model or data files not found. Please run `train_and_save.py` first to generate the necessary assets.")
     st.stop()
 
-
 features = [f'lep_pt_{i}' for i in range(4)] + [f'lep_eta_{i}' for i in range(4)] + \
            [f'lep_phi_{i}' for i in range(4)] + [f'lep_E_{i}' for i in range(4)] + ['M_4l']
-
-
 
 st.sidebar.title("Navigation")
 page = st.sidebar.radio("Go to", ["Project Introduction", "Exploratory Data Analysis", "AI Model Performance", "The Discovery Plot" , "Documentation"])
@@ -67,12 +60,10 @@ if page == "Project Introduction":
     """)
     st.image("higgs_boson.png", caption="A simulated particle collision event at the LHC.")
 
-
 elif page == "Exploratory Data Analysis":
     st.title("1.Exploratory Data Analysis (EDA)")
     st.markdown("We created a usable simulated datatet (mc_df) to show inherent differences between signal and background , there are three implemented histograms -> 1.Four-Lepton Invariant Mass , 2.Lepton Transverse Momentum ,  3.Invariant Mass after AI Cut:")
     
-
     features_to_plot = {
         "Four-Lepton Invariant Mass ($M_{4\ell}$)": "M_4l",
         "Leading Lepton Transverse Momentum ($p_T$)": "lep_pt_0",
@@ -103,11 +94,9 @@ elif page == "Exploratory Data Analysis":
     ax.legend()
     st.pyplot(fig)
 
-
 elif page == "AI Model Performance":
     st.title("2.AI Model Performance Comparison")
     st.markdown("AUC Comparison for XG Boost , DNN vs Rndom chance ( 0.5 ) where a AUC od 1.0 is a perfect classifier ")
-
 
     X = mc_df[features]
     y = mc_df['is_signal']
@@ -142,16 +131,13 @@ elif page == "The Discovery Plot":
 
     **Use the slider below to change the classification threshold.** A higher threshold is stricter, keeping fewer events but creating a purer sample. Observe how a potential Higgs peak around 125 GeV might emerge from the background as you increase the cut value.
     """)
-
    
     X_real = data_df[features].astype('float32')
     
-  
     predictions = bst.predict(xgb.DMatrix(X_real))
     data_df['score'] = predictions
 
     classifier_threshold = st.slider("Classifier Probability Threshold (Cut)", 0.50, 0.99, 0.90, 0.01)
-
 
     filtered_data = data_df[data_df['score'] > classifier_threshold]
     
@@ -190,7 +176,7 @@ elif page == "Documentation":
     """)
     st.subheader("1.2. The Analytical Challenge: Signal vs. Background")
     st.markdown("""
-    The central challenge in experimental particle physics is the statistical separation of a rare signal process from copious background processes. The production cross-section for the Higgs boson is orders of magnitude smaller than that of many Standard Model backgrounds. We search for the Higgs via its decay products, focusing on the $H \\rightarrow ZZ^* \\rightarrow 4\\ell$ channel (where $\\ell$ is an electron or muon). This is known as the "golden channel" due to its clean experimental signature and the high precision with which the four-lepton invariant mass, $m_{4\\ell}$, can be reconstructed.
+    The central challenge in experimental particle physics is the statistical separation of a rare signal process from copious background processes. The production cross-section for the Higgs boson is orders of magnitude smaller than that of many Standard Model backgrounds. We search for the Higgs via its decay products, focusing on the $H \\rightarrow ZZ^* \\rightarrow 4\\ell$ channel (where $\\ell$ is an electron or muon). This is known as the "golden channel" due to its clean experimental signature and the high precision with which the four-lepton invariant mass, $m_{4\ell}$, can be reconstructed.
 
     The primary "irreducible" background is the direct production of a $ZZ$ pair, which can decay to the same four-lepton final state. While the final state particles are identical, the kinematics of the event—the momenta and angular distributions of the leptons—differ subtly due to the different spin and production mechanisms of the parent particle.
 
@@ -243,11 +229,5 @@ elif page == "Documentation":
     st.markdown("""
     <div align="center">
     
-   
-    
-  
-    
     </div>
     """, unsafe_allow_html=True)
-
-
